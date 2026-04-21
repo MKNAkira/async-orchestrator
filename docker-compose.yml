@@ -1,0 +1,27 @@
+services:
+  # Nossa API FastAPI (A Porta de Entrada)
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - redis # A API só sobe depois que o Redis estiver pronto
+
+  # Nosso Message Broker (A Fila ultrarrápida)
+  redis:
+    image: redis:7-alpine # Imagem oficial e super leve do Redis
+    ports:
+      - "6379:6379"
+
+  # Nosso Trabalhador em Segundo Plano
+  worker:
+    build: .
+    command: celery -A tasks worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
