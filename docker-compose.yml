@@ -1,5 +1,5 @@
 services:
-  # Nossa API FastAPI (A Porta de Entrada)
+  #FastAPI 
   api:
     build: .
     ports:
@@ -11,17 +11,16 @@ services:
     depends_on:
       - redis # A API só sobe depois que o Redis estiver pronto
 
-  # Nosso Message Broker (A Fila ultrarrápida)
+  #Message Broker
   redis:
-    image: redis:7-alpine # Imagem oficial e super leve do Redis
+    image: redis:7-alpine 
     ports:
       - "6379:6379"
 
-  # Nosso Trabalhador em Segundo Plano
   worker:
     build: .
     command: celery -A tasks worker --loglevel=info
     volumes:
       - .:/app
     depends_on:
-      - redis
+      - redis # Worker só roda depois do Redis iniciar evitando falhas no celery.
