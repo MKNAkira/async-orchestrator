@@ -1,8 +1,35 @@
 from fastapi import FastAPI
-from tasks import process_heavy_data
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 from celery.result import AsyncResult
+from tasks import process_heavy_data, celery_app
 
-app = FastAPI(title="Async Orchestrator API")
+app = FastAPI(
+    title="GlobalLog Async Orchestrator",
+    description="API robusta para processamento assíncrono de manifestos logísticos.",
+    version="2.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# NOVO: Sub-modelo simulando as linhas de uma planilha densa
+class ItemEstoque(BaseModel):
+    prato: str
+    lote: str
+    quantidade: int
+
+class ManifestoPayload(BaseModel):
+    codigo_rastreio: str = Field(..., description="Código único da carga", min_length=5)
+    motorista: str = Field(...)
+    filial_origem: str = Field(default="SPO-01")
+    # NOVO: Lista que pode receber milhares de itens
+    itens: list[ItemEstoque] = []
 
 @app.get("/")
 def read_root():
@@ -12,35 +39,22 @@ def read_root():
 def health_check():
     return {"status": "ok"}
 
-# --- NOVA ROTA ASSÍNCRONA ---
-@app.post("/processar/{dados}")
-def iniciar_processamento(dados: str):
-    """
-    Recebe o dado do usuário e envia para a fila do Celery.
-    Responde instantaneamente sem deixar o usuário esperando.
-    """
-    # O .delay() é a mágica do Celery. Ele não roda a função aqui, ele manda pro Redis!
-    tarefa = process_heavy_data.delay(dados)
+@app.post("/processar/", status_code=202)
+def iniciar_processamento(payload: ManifestoPayload):
+    # O payload agora pode ter dezenas de megabytes
+    tarefa = process_heavy_data.delay(payload.model_dump())
     
     return {
-        "message": "Processamento enviado para a fila com sucesso!",
+        "message": "Manifesto recebido e enviado para a fila de processamento.",
         "task_id": tarefa.id
     }
 
 @app.get("/status/{task_id}")
 def verificar_status(task_id: str):
-    """
-    O usuário envia o ID que recebeu e nós perguntamos ao Celery (via Redis)
-    qual é o status atual da tarefa.
-    """
-    # Cria uma referência à tarefa baseada no ID
-    tarefa = AsyncResult(task_id, app=process_heavy_data.app)
+    tarefa = AsyncResult(task_id, app=celery_app)
     
-    # Monta a resposta
-    resposta = {
+    return {
         "task_id": task_id,
-        "status": tarefa.state, # Pode ser PENDING, STARTED, SUCCESS, FAILURE...
-        "resultado": tarefa.result if tarefa.ready() else "Ainda processando..."
+        "status": tarefa.state,
+        "resultado": tarefa.result if tarefa.ready() else "Aguardando operário (Worker)..."
     }
-    
-    return resposta    
