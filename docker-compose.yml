@@ -8,12 +8,14 @@ services:
       - .:/app
     environment:
       - PYTHONUNBUFFERED=1
+    env_file:
+      - .env  # <-- Injeta as credenciais
     depends_on:
-      - redis # A API só sobe depois que o Redis estiver pronto
+      - redis
 
-  # Nosso Message Broker (A Fila ultrarrápida)
+  # Nosso Message Broker (A Fila)
   redis:
-    image: redis:7-alpine # Imagem oficial e super leve do Redis
+    image: redis:7-alpine
     ports:
       - "6379:6379"
 
@@ -23,5 +25,7 @@ services:
     command: celery -A tasks worker --loglevel=info
     volumes:
       - .:/app
+    env_file:
+      - .env  # <-- Injeta as credenciais
     depends_on:
       - redis
