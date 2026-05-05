@@ -23,17 +23,20 @@ O usuário usa o task_id para consultar se a tarefa já terminou.
 
 Cada ferramenta aqui foi escolhida com um propósito específico para garantir escalabilidade:
 
-FastAPI (O Balcão de Atendimento): Por que não Flask ou Django? O FastAPI é moderno, assíncrono por natureza e extremamente rápido. O maior trunfo dele é usar o Pydantic por baixo dos panos, o que valida qualquer payload de entrada de forma estrita antes mesmo de bater na minha regra de negócio. Além disso, ele gera o Swagger sozinho.
+FastAPI: Por que não Flask ou Django? O FastAPI é moderno, assíncrono por natureza e extremamente rápido. O maior trunfo dele é usar o Pydantic por baixo dos panos, o que valida qualquer payload de entrada de forma estrita antes mesmo de bater na minha regra de negócio. Além disso, ele gera o Swagger sozinho.
 
-Celery (O Operário de Força Bruta): Por que não usar apenas asyncio nativo do Python? Porque o asyncio roda na mesma máquina da API. Se a máquina reiniciar, perco as tarefas. O Celery é padrão de mercado para background tasks distribuídas. Se der erro, ele faz retry automático. Se a demanda subir, posso simplesmente subir mais 10 containers de Celery (escalabilidade horizontal) e a API nem percebe.
+Celery(Worker): Por que não usar apenas asyncio nativo do Python? Porque o asyncio roda na mesma máquina da API. Se a máquina reiniciar, perco as tarefas. O Celery é padrão de mercado para background tasks distribuídas. Se der erro, ele faz retry automático. Se a demanda subir, posso simplesmente subir mais 10 containers de Celery (escalabilidade horizontal) e a API nem percebe.
 
-Redis (O Correio / Broker): O Celery precisa de um lugar muito rápido para buscar as tarefas. O Redis roda em memória RAM, o que faz dele o message broker perfeito (e super leve) para gerenciar essa fila e também para guardar o status temporário ("Pendente", "Sucesso") dos resultados.
+Redis (Broker): O Celery precisa de um lugar muito rápido para buscar as tarefas. O Redis roda em memória RAM, o que faz dele o message broker perfeito (e super leve) para gerenciar essa fila e também para guardar o status temporário ("Pendente", "Sucesso") dos resultados.
 
-Docker & Docker Compose (A Infraestrutura): O clássico "na minha máquina funciona" não serve para produção. Com o Docker Compose, eu garanto que o servidor web, o banco de dados em memória e o worker subam perfeitamente integrados em qualquer sistema operacional com apenas um comando.
+Docker & Docker Compose (Infraestrutura): O clássico "na minha máquina funciona" não serve para produção. Com o Docker Compose, eu garanto que o servidor web, o banco de dados em memória e o worker subam perfeitamente integrados em qualquer sistema operacional com apenas um comando.
 
-# Como rodar o projeto na sua máquina
+#COMO OPERAR O PROJETO:
 
-Esqueça a configuração manual de ambientes virtuais do Python. Você só precisa ter o Docker e o Docker Compose instalados.
+A configuração manual de ambientes virtuais do Python não é necessária. Somente os requisitos;
+Requisitos: Docker e o Docker Compose.
+
+
 
 Clone este repositório:
 
@@ -45,11 +48,13 @@ Suba a infraestrutura completa (API, Redis e Celery Worker):
 
 docker compose up --build -d
 
-
 (A flag -d deixa rodando em background para seu terminal não ficar preso).
 
-Acesse a documentação interativa (Swagger) e faça seus testes:
-👉 https://www.google.com/search?q=http://127.0.0.1:8000/docs
+
+Após configurar o Ambiente na sua máquina;
+
+Acesse a documentação interativa (Swagger) localmente e faça seus testes:
+👉 http://127.0.0.1:8000/docs
 
 📡 Endpoints (Como usar)
 
