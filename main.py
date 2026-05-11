@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# NOVO: Sub-modelo simulando as linhas de uma planilha densa
+# Sub-modelo simulando as linhas de uma planilha densa
 class ItemEstoque(BaseModel):
     prato: str
     lote: str
@@ -41,7 +41,9 @@ def health_check():
 
 @app.post("/processar/", status_code=202)
 def iniciar_processamento(payload: ManifestoPayload):
-    # O payload agora pode ter dezenas de megabytes
+
+
+    
     tarefa = process_heavy_data.delay(payload.model_dump())
     
     return {
